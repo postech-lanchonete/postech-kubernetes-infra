@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postech-pagamentos-service
+spec:
+  selector:
+    app: postech-pagamentos
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8084
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postech-pagamentos-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postech-pagamentos
+  template:
+    metadata:
+      labels:
+        app: postech-pagamentos
+    spec:
+      containers:
+        - name: postech-pagamentos
+          image: danielmaria/postech-pagamento:latest-macos
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_DATABASE
+              value: pagamentos
+            - name: SPRING_DATASOURCE_USERNAME
+              value: admin
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-postech.kafka-zookeeper.svc.cluster.local:9092
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO

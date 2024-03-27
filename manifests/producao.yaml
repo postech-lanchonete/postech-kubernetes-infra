@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postech-producao-service
+spec:
+  selector:
+    app: postech-producao
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8083
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postech-producao-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postech-producao
+  template:
+    metadata:
+      labels:
+        app: postech-producao
+    spec:
+      containers:
+        - name: postech-producao
+          image: danielmaria/postech-producao:latest-macos
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/producao?createDatabaseIfNotExist=true
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-postech.kafka-zookeeper.svc.cluster.local:9092

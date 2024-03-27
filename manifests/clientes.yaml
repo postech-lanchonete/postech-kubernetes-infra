@@ -1,0 +1,46 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postech-clientes-service
+spec:
+  selector:
+    app: postech-clientes
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8081
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postech-clientes-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postech-clientes
+  template:
+    metadata:
+      labels:
+        app: postech-clientes
+    spec:
+      containers:
+        - name: postech-clientes
+          image: danielmaria/postech-clientes:latest-macos
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/clientes?createDatabaseIfNotExist=true
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO

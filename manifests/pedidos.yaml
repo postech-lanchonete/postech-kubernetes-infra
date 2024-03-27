@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postech-pedidos-service
+spec:
+  selector:
+    app: postech-pedidos
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8085
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postech-pedidos-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postech-pedidos
+  template:
+    metadata:
+      labels:
+        app: postech-pedidos
+    spec:
+      containers:
+        - name: postech-pedidos
+          image: danielmaria/postech-pedidos:latest-macos
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/pedidos?createDatabaseIfNotExist=true
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-postech.kafka-zookeeper.svc.cluster.local:9092
+            - name: CLIENTES_URL
+              value: postech-clientes-service:8081
+            - name: PRODUTOS_URL
+              value: postech-produtos-service:8082
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO
